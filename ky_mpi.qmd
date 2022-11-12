@@ -1,0 +1,55 @@
+---
+title: "Multidimensional Poverty in Kentucky"
+format: 
+    html:
+        code-fold: true
+---
+
+## Import Packages
+
+```{python}
+import numpy as np
+import pandas as pd
+import altair as alt
+import os
+```
+
+## Import Data
+
+
+```{python}
+os.chdir("C:\\Users\\natek\\Documents\\ky_mpi\\")
+df = pd.read_csv("ky_ipums.csv")
+```
+
+
+```{python}
+
+#1) income 
+
+#poor if under 100% of poverty line, not poor if not. 
+df['income_poverty'] = np.where(df['POVERTY'] < 100, 1, 0)
+#except for needs to be listed as NA for when it's undefined by census bureau
+df['income_poverty'] = np.where(df['POVERTY'] == 0, np.nan, df['income_poverty'])
+
+#2) employment
+
+#set NAs for investment and retirement income
+df['INCINVST'] = np.where(df['INCINVST'] == 999999, np.nan, df['INCINVST'])
+df['INCRETIR'] = np.where(df['INCRETIR'] == 999999, np.nan, df['INCRETIR'])
+
+df['emp_num'] = np.where(df['EMPSTAT'] == 1, 1, 0)
+
+##household level variable
+#first make dummy vars
+df['retired'] = np.where(df['INCRETIR'] > 20000, 1, 0)
+
+df_out= df.merge((df.groupby(['SERIAL', 'YEAR'])
+                                    .apply(lambda x: (x['retired'].eq(1).any())).reset_index()), how = 'left').rename(columns = {0: 'household_retired'})
+
+
+
+
+#df_joined = df.join(df_hh, how = 'left', on = ['SERIAL', 'YEAR'])
+```
+
